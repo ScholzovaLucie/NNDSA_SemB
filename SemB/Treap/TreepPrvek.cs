@@ -11,7 +11,7 @@ namespace SemB.Treap
         public TreepPrvek(TKey hodnota)
         {
             Hodnota = hodnota;
-            Pritorita = new Random().Next();
+            Pritorita = new Random().Next(0,1000);
         }
 
         public TKey Hodnota { get; set; }

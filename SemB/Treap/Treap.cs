@@ -8,16 +8,14 @@ using System.Xml.Linq;
 
 namespace SemB.Treap
 {
-    internal class Treap<TKey>: ITreap<TKey> where TKey : IComparable
+    internal class Treap<TKey> where TKey : IComparable
     {
         private TreepPrvek<TKey> koren;
-
+         
         public Treap()
         {
             koren = null;
         }
-
-        public int Pocet { get; private set; }
 
 
         public void Add(TKey key)
@@ -28,7 +26,11 @@ namespace SemB.Treap
         private TreepPrvek<TKey> Insert(ref TreepPrvek<TKey> node, TKey key)
         {
             if (node == null)
-                return new TreepPrvek<TKey>(key);
+            {
+                node = new TreepPrvek<TKey>(key);
+                return node;
+            }
+               
 
             int cmp = key.CompareTo(node.Hodnota);
             if (cmp < 0)
@@ -50,7 +52,6 @@ namespace SemB.Treap
         public void Clear()
         {
             koren = null;
-            Pocet = 0;
         }
 
         public int Count()
@@ -69,7 +70,6 @@ namespace SemB.Treap
         public void Remove(TKey key)
         {
             koren = Delete(koren, key);
-            Pocet--;
         }
 
         private TreepPrvek<TKey> Delete(TreepPrvek<TKey> node, TKey key)
@@ -176,6 +176,23 @@ namespace SemB.Treap
             int rightHeight = Height(node.Pravy);
 
             return 1 + Math.Max(leftHeight, rightHeight);
+        }
+
+        public IEnumerable<TKey> InOrderTraversal()
+        {
+            var list = new List<TKey>();
+            InOrderTraversal(koren, list);
+            return list;
+        }
+
+        private void InOrderTraversal(TreepPrvek<TKey> node, List<TKey> list)
+        {
+            if (node != null)
+            {
+                InOrderTraversal(node.Levy, list); // Procházení levého podstromu
+                list.Add(node.Hodnota); // Navštívení aktuálního uzlu
+                InOrderTraversal(node.Pravy, list); // Procházení pravého podstromu
+            }
         }
 
     }

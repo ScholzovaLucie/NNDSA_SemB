@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SemB.Treap
 {
-    internal interface ITreap<TKey>
+    internal interface ITreap<TKey> where TKey : IComparable
     {
         void Clear();
         int Count();
