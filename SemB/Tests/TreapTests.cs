@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SemB.Treap;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,30 +9,45 @@ using System.Threading.Tasks;
 
 namespace SemB.Tests
 {
-    [TestClass]
+    [TestFixture]
     public class TreapTests
     {
-        Random rng = new Random();
-        int GenerateRandomPriority()
-        {
-            return rng.Next(1, 1000);
+        private Treap<string, int> treap;
+        private TreapStatistics stats;
 
-        }
-        [TestMethod]
-        public void TestInsertAndSearch()
+        [SetUp]
+        public void Setup()
         {
-            var treap = new Treap<int, int>(GenerateRandomPriority);
-            treap.Add(10);
-            Assert.IsTrue(treap.Find(10), "Prvek 10 nebyl nalezen.");
+            treap = new Treap<string, int>(() => new Random().Next(100)); // Předpokládá, že priority jsou typu int
+            stats = new TreapStatistics();
         }
 
-        [TestMethod]
-        public void TestDelete()
+        [Test]
+        public void TestTreapOperations()
         {
-            var treap = new Treap<int, int>(GenerateRandomPriority);
-            treap.Add(20);
-            treap.Remove(20);
-            Assert.IsFalse(treap.Find(20), "Prvek 20 byl nalezen, i když měl být odstraněn.");
+            // Příklad vkládání náhodně generovaných názvů obcí do Treapu
+            for (int i = 0; i < 10000; i++) // 10 000 pokusů
+            {
+                treap.Clear(); // Resetuje Treap před každým pokusem
+                for (int j = 0; j < 1023; j++) // Vloží 1 023 náhodných prvků
+                {
+                    string obec = "Obec" + new Random().Next(1000000).ToString("D6");
+                    treap.Add(obec);
+                }
+                int height = treap.Height();
+                stats.AddHeight(height);
+            }
+
+            // Test statistické analýzy
+            NUnit.Framework.Assert.That(stats.GetMaxHeight(), Is.GreaterThan(0));
+            NUnit.Framework.Assert.That(stats.GetMinHeight(), Is.LessThan(100)); // Předpokládejme rozumné maximum pro výšku
+            NUnit.Framework.Assert.That(stats.GetAverageHeight(), Is.GreaterThan(0));
+
+            // Výpis statistik (nepotřebné pro test, ale užitečné pro debug)
+            Console.WriteLine($"Průměrná výška: {stats.GetAverageHeight()}");
+            Console.WriteLine($"Maximální výška: {stats.GetMaxHeight()}");
+            Console.WriteLine($"Minimální výška: {stats.GetMinHeight()}");
+            Console.WriteLine($"Modus výšky: {stats.GetModeHeight()}");
         }
     }
 

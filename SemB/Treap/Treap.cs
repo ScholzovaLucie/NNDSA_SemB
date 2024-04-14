@@ -53,7 +53,8 @@ namespace SemB.Treap
         private TreepPrvek<TK, TP> Insert(ref TreepPrvek<TK, TP> node, TK hodota)
         {
             if (node == null)
-                return new TreepPrvek<TK, TP>(hodota, generatePriority);
+               return node = new TreepPrvek<TK, TP>(hodota, generatePriority);
+
 
             int cmp = hodota.CompareTo(node.Hodnota);
             if (cmp < 0)
