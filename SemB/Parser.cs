@@ -7,18 +7,15 @@ using System.Threading.Tasks;
 
 namespace SemB
 {
-    internal class Parser<TKey> where TKey : IComparable
+    internal class Parser<TK, TP> where TK : IComparable<TK> where TP : IComparable<TP>
     {
-        // Načítá hodnoty z textového souboru a vkládá je do treapu
-        public void LoadValuesFromFile(Treap<TKey> treap, string filePath)
+        public void LoadValuesFromFile(Treap<TK, TP> treap, string filePath)
         {
             try
             {
                 foreach (var line in File.ReadLines(filePath))
                 {
-                    // Předpokládáme, že treap má metodu Insert, která přijímá hodnotu typu T
-                    // Zde je nutné přidat logiku pro převod řetězce na typ T, pokud T není string
-                    treap.Add((TKey)Convert.ChangeType(line, typeof(TKey)));
+                    treap.Add((TK)Convert.ChangeType(line, typeof(TK)));
                 }
                 Console.WriteLine("Hodnoty byly úspěšně načteny.");
             }
@@ -28,14 +25,12 @@ namespace SemB
             }
         }
 
-        // Ukládá hodnoty stromu do textového souboru
-        public void SaveTreeToFile(Treap<TKey> treap, string filePath)
+        public void SaveTreeToFile(Treap<TK, TP> treap, string filePath)
         {
             try
             {
                 using (var writer = new StreamWriter(filePath))
                 {
-                    // Předpokládáme, že treap má metodu pro průchod (např. InOrderTraversal), která vrací IEnumerable<T>
                     foreach (var value in treap.InOrderTraversal())
                     {
                         writer.WriteLine(value);
@@ -49,7 +44,6 @@ namespace SemB
             }
         }
 
-        // Ukládá statistickou analýzu do souboru
         public void SaveStatsToFile(TreapStatistics stats, string filePath)
         {
             try

@@ -8,41 +8,64 @@ using System.Xml.Linq;
 
 namespace SemB.Treap
 {
-    internal class Treap<TKey> where TKey : IComparable
+    class TreepPrvek<TK, TP> where TK : IComparable<TK> where TP : IComparable<TP>
     {
-        private TreepPrvek<TKey> koren;
-         
-        public Treap()
+        public TK Hodnota { get; set; }
+        public TP Pritorita { get; set; }
+
+        public TreepPrvek<TK, TP> Levy;
+        public TreepPrvek<TK, TP> Pravy;
+
+
+        public TreepPrvek(TK hodnota, Func<TP> priorityGenerator)
         {
-            koren = null;
+            Hodnota = hodnota;
+            Pritorita = priorityGenerator();
         }
 
 
-        public void Add(TKey key)
+
+        public override string ToString()
+        {
+            return $"{Hodnota}({Pritorita})";
+        }
+    }
+
+    class Treap<TK, TP> : ITreap<TK, TP> where TK : IComparable<TK> where TP : IComparable<TP>
+    {
+        private TreepPrvek<TK, TP> koren;
+        private Func<TP> generatePriority;
+
+        public Treap(Func<TP> priorityGenerator)
+        {
+            generatePriority = priorityGenerator;
+            koren = null;
+        }
+
+        public int Pocet { get; private set; }
+
+
+        public void Add(TK key)
         {
             Insert(ref koren, key);
         }
 
-        private TreepPrvek<TKey> Insert(ref TreepPrvek<TKey> node, TKey key)
+        private TreepPrvek<TK, TP> Insert(ref TreepPrvek<TK, TP> node, TK hodota)
         {
             if (node == null)
-            {
-                node = new TreepPrvek<TKey>(key);
-                return node;
-            }
-               
+                return new TreepPrvek<TK, TP>(hodota, generatePriority);
 
-            int cmp = key.CompareTo(node.Hodnota);
+            int cmp = hodota.CompareTo(node.Hodnota);
             if (cmp < 0)
             {
-                node.Levy = Insert(ref node.Levy, key);
-                if (node.Levy.Pritorita > node.Pritorita)
+                node.Levy = Insert(ref node.Levy, hodota);
+                if (node.Levy.Pritorita.CompareTo(node.Pritorita) < 0)
                     node = RotateRight(node);
             }
             else if (cmp > 0)
             {
-                node.Pravy = Insert(ref node.Pravy, key);
-                if (node.Pravy.Pritorita > node.Pritorita)
+                node.Pravy = Insert(ref node.Pravy, hodota);
+                if (node.Pravy.Pritorita.CompareTo(node.Pritorita) < 0)
                     node = RotateLeft(node);
             }
             return node;
@@ -52,6 +75,7 @@ namespace SemB.Treap
         public void Clear()
         {
             koren = null;
+            Pocet = 0;
         }
 
         public int Count()
@@ -59,7 +83,7 @@ namespace SemB.Treap
             return getCount(koren);
         }
 
-        private int getCount(TreepPrvek<TKey> node)
+        private int getCount(TreepPrvek<TK, TP> node)
         {
             if (node == null)
                 return 0;
@@ -67,12 +91,13 @@ namespace SemB.Treap
                 return 1 + getCount(node.Levy) + getCount(node.Pravy);
         }
 
-        public void Remove(TKey key)
+        public void Remove(TK key)
         {
             koren = Delete(koren, key);
+            Pocet--;
         }
 
-        private TreepPrvek<TKey> Delete(TreepPrvek<TKey> node, TKey key)
+        private TreepPrvek<TK, TP> Delete(TreepPrvek<TK, TP> node, TK key)
         {
             if (node == null) return null;
 
@@ -89,7 +114,7 @@ namespace SemB.Treap
             {
                 if (node.Levy == null) return node.Pravy;
                 else if (node.Pravy == null) return node.Levy;
-                else if (node.Levy.Pritorita < node.Pravy.Pritorita)
+                else if (node.Levy.Pritorita.CompareTo(node.Pravy.Pritorita) < 0)
                 {
                     node = RotateLeft(node);
                     node.Levy = Delete(node.Levy, key);
@@ -103,9 +128,9 @@ namespace SemB.Treap
             return node;
         }
 
-        public bool Find( TKey key)
+        public bool Find(TK key)
         {
-            TreepPrvek<TKey> node = koren;
+            TreepPrvek<TK, TP> node = koren;
             while (node != null)
             {
                 int cmp = key.CompareTo(node.Hodnota);
@@ -116,17 +141,17 @@ namespace SemB.Treap
             return false;
         }
 
-        private TreepPrvek<TKey> RotateRight(TreepPrvek<TKey> node)
+        private TreepPrvek<TK, TP> RotateRight(TreepPrvek<TK, TP> node)
         {
-            var left = node.Levy;
+            TreepPrvek<TK, TP> left = node.Levy;
             node.Levy = left.Pravy;
             left.Pravy = node;
             return left;
         }
 
-        private TreepPrvek<TKey> RotateLeft(TreepPrvek<TKey> node)
+        private TreepPrvek<TK, TP> RotateLeft(TreepPrvek<TK, TP> node)
         {
-            var right = node.Pravy;
+            TreepPrvek<TK, TP> right = node.Pravy;
             node.Pravy = right.Levy;
             right.Levy = node;
             return right;
@@ -137,9 +162,8 @@ namespace SemB.Treap
             PrintTree(koren, "", true);
         }
 
-        private void PrintTree(TreepPrvek<TKey> node, string indent, bool last)
+        private void PrintTree(TreepPrvek<TK, TP> node, string indent, bool last)
         {
-            // Kontrola, zda aktuální uzel není null
             if (node != null)
             {
                 Console.Write(indent);
@@ -153,10 +177,8 @@ namespace SemB.Treap
                     Console.Write("L----");
                     indent += "|    ";
                 }
-                // Výpis aktuálního uzlu
-                Console.WriteLine($"{node.Hodnota}({node.Pritorita})");
+                Console.WriteLine(node.ToString());
 
-                // Rekurzivní výpis levého a pravého potomka
                 PrintTree(node.Levy, indent, false);
                 PrintTree(node.Pravy, indent, true);
             }
@@ -167,7 +189,7 @@ namespace SemB.Treap
             return Height(koren);
         }
 
-        private int Height(TreepPrvek<TKey> node)
+        private int Height(TreepPrvek<TK, TP> node)
         {
             if (node == null)
                 return 0;
@@ -178,20 +200,20 @@ namespace SemB.Treap
             return 1 + Math.Max(leftHeight, rightHeight);
         }
 
-        public IEnumerable<TKey> InOrderTraversal()
+        public IEnumerable<TK> InOrderTraversal()
         {
-            var list = new List<TKey>();
+            var list = new List<TK>();
             InOrderTraversal(koren, list);
             return list;
         }
 
-        private void InOrderTraversal(TreepPrvek<TKey> node, List<TKey> list)
+        private void InOrderTraversal(TreepPrvek<TK, TP> node, List<TK> list)
         {
             if (node != null)
             {
-                InOrderTraversal(node.Levy, list); // Procházení levého podstromu
-                list.Add(node.Hodnota); // Navštívení aktuálního uzlu
-                InOrderTraversal(node.Pravy, list); // Procházení pravého podstromu
+                InOrderTraversal(node.Levy, list);
+                list.Add(node.Hodnota);
+                InOrderTraversal(node.Pravy, list);
             }
         }
 

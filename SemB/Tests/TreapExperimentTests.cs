@@ -11,28 +11,34 @@ namespace SemB.Tests
     [TestClass]
     internal class TreapExperimentTests
     {
+        Random rng = new Random();
+        int GenerateRandomPriority()
+        {
+            return rng.Next(1, 1000);
+        }
+
         [TestMethod]
         public void PerformRandomExperiments()
         {
             const int experiments = 10000;
             const int nodesPerExperiment = 1023;
             var random = new Random();
-            var results = new List<int>(); // Seznam pro uchování výšek stromů z experimentů
+            var results = new List<int>();
 
             for (int i = 0; i < experiments; i++)
             {
-                var treap = new Treap<int>(); // Předpokládáme, že Treap je implementován pro int
+                var treap = new Treap<int, int>(GenerateRandomPriority); 
                 for (int j = 0; j < nodesPerExperiment; j++)
                 {
                     treap.Add(random.Next()); 
                 }
 
-                int treeHeight = treap.Height(); // Implementujte metodu pro výpočet výšky stromu
-                results.Add(treeHeight); // Ukládáme výšku stromu z každého experimentu do seznamu
+                int treeHeight = treap.Height(); 
+                results.Add(treeHeight); 
             }
 
-            // Zde můžete přidat logiku pro další zpracování nebo ověření výsledků
             Assert.IsTrue(results.Count == experiments, "Počet experimentů neodpovídá počtu zaznamenaných výsledků.");
         }
+
         }
 }

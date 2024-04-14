@@ -7,9 +7,15 @@ namespace SemB
     {
         public static void Main(string[] args)
         {
-            Parser<string> parser = new Parser<string>();
-            var treap = new Treap<string>(); // Předpokládáme existenci generické třídy Treap<T>
-            var stats = new TreapStatistics(); // Pro statistické zpracování
+            Random rng = new Random();
+            int GenerateRandomPriority()
+            {
+                return rng.Next(1, 1000);
+            }
+
+            Parser<string, int> parser = new Parser<string, int>();
+            var treap = new Treap<string, int>(GenerateRandomPriority);
+            var stats = new TreapStatistics();
             var keepRunning = true;
 
             while (keepRunning)
