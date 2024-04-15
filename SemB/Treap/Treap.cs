@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SemB.Generator;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,162 +9,170 @@ using System.Xml.Linq;
 
 namespace SemB.Treap
 {
-    class TreepPrvek<TK, TP> where TK : IComparable<TK> where TP : IComparable<TP>
+
+    public class Treap<TK, TP> : ITreap<TK, TP> where TK : IComparable<TK> where TP : IComparable<TP>
     {
-        public TK Hodnota { get; set; }
-        public TP Pritorita { get; set; }
-
-        public TreepPrvek<TK, TP> Levy;
-        public TreepPrvek<TK, TP> Pravy;
-
-
-        public TreepPrvek(TK hodnota, Func<TP> priorityGenerator)
+        private class Node
         {
-            Hodnota = hodnota;
-            Pritorita = priorityGenerator();
+            public TK Key { get; set; }
+            public TP Priority { get; private set; }
+            public Node Left;
+            public Node Right;
+
+            public Node(TK key, TP priority)
+            {
+                Key = key;
+                Priority = priority;
+            }
+            public override string ToString()
+            {
+                return $"{Left?.PrintNode()} <- {Key}({Priority}) -> {Right?.PrintNode()}";
+            }
+
+            public string PrintNode()
+            {
+                return $"{Key}({Priority})";
+            }
         }
 
+        private Node root;
+        private IPriorityGenerator<TP> priorityGenerator;
+        private int count;
 
-
-        public override string ToString()
+        public Treap(IPriorityGenerator<TP> priorityGenerator)
         {
-            return $"{Hodnota}({Pritorita})";
-        }
-    }
-
-    class Treap<TK, TP> : ITreap<TK, TP> where TK : IComparable<TK> where TP : IComparable<TP>
-    {
-        private TreepPrvek<TK, TP> koren;
-        private Func<TP> generatePriority;
-
-        public Treap(Func<TP> priorityGenerator)
-        {
-            generatePriority = priorityGenerator;
-            koren = null;
+            this.priorityGenerator = priorityGenerator;
+            this.root = null;
+            this.count = 0;
         }
 
-        public int Pocet { get; private set; }
-
+        public int Count() => count;
 
         public void Add(TK key)
         {
-            Insert(ref koren, key);
+            if (priorityGenerator != null)
+                root = Insert(ref root, key, priorityGenerator.Next());
+            else
+                throw new InvalidOperationException("Priority generator is not loaded.");
         }
 
-        private TreepPrvek<TK, TP> Insert(ref TreepPrvek<TK, TP> node, TK hodota)
+        private Node Insert(ref Node node, TK key, TP priority)
         {
             if (node == null)
-               return node = new TreepPrvek<TK, TP>(hodota, generatePriority);
+            {
+                count++;
+                return node = new Node(key, priority);
+            }
 
-
-            int cmp = hodota.CompareTo(node.Hodnota);
+            int cmp = key.CompareTo(node.Key);
             if (cmp < 0)
             {
-                node.Levy = Insert(ref node.Levy, hodota);
-                if (node.Levy.Pritorita.CompareTo(node.Pritorita) < 0)
+                node.Left = Insert(ref node.Left, key, priority);
+                if (node.Left.Priority.CompareTo(node.Priority) < 0)
                     node = RotateRight(node);
             }
             else if (cmp > 0)
             {
-                node.Pravy = Insert(ref node.Pravy, hodota);
-                if (node.Pravy.Pritorita.CompareTo(node.Pritorita) < 0)
+                node.Right = Insert(ref node.Right, key, priority);
+                if (node.Right.Priority.CompareTo(node.Priority) < 0)
                     node = RotateLeft(node);
             }
             return node;
         }
 
-
-        public void Clear()
+        public bool Remove(TK key)
         {
-            koren = null;
-            Pocet = 0;
+            int initialCount = count;
+            root = Delete(root, key);
+            return count < initialCount;
         }
 
-        public int Count()
-        {
-            return getCount(koren);
-        }
-
-        private int getCount(TreepPrvek<TK, TP> node)
-        {
-            if (node == null)
-                return 0;
-            else
-                return 1 + getCount(node.Levy) + getCount(node.Pravy);
-        }
-
-        public void Remove(TK key)
-        {
-            koren = Delete(koren, key);
-            Pocet--;
-        }
-
-        private TreepPrvek<TK, TP> Delete(TreepPrvek<TK, TP> node, TK key)
+        private Node Delete(Node node, TK key)
         {
             if (node == null) return null;
 
-            int cmp = key.CompareTo(node.Hodnota);
+            int cmp = key.CompareTo(node.Key);
             if (cmp < 0)
-            {
-                node.Levy = Delete(node.Levy, key);
-            }
+                node.Left = Delete(node.Left, key);
             else if (cmp > 0)
-            {
-                node.Pravy = Delete(node.Pravy, key);
-            }
+                node.Right = Delete(node.Right, key);
             else
             {
-                if (node.Levy == null) return node.Pravy;
-                else if (node.Pravy == null) return node.Levy;
-                else if (node.Levy.Pritorita.CompareTo(node.Pravy.Pritorita) < 0)
+                if (node.Left == null || node.Right == null)
+                {
+                    count--;
+                    return node.Left ?? node.Right;
+                }
+
+                if (node.Left.Priority.CompareTo(node.Right.Priority) < 0)
                 {
                     node = RotateLeft(node);
-                    node.Levy = Delete(node.Levy, key);
+                    node.Left = Delete(node.Left, key);
                 }
                 else
                 {
                     node = RotateRight(node);
-                    node.Pravy = Delete(node.Pravy, key);
+                    node.Right = Delete(node.Right, key);
                 }
             }
             return node;
         }
 
-        public bool Find(TK key)
+        private Node RotateRight(Node node)
         {
-            TreepPrvek<TK, TP> node = koren;
-            while (node != null)
-            {
-                int cmp = key.CompareTo(node.Hodnota);
-                if (cmp < 0) node = node.Levy;
-                else if (cmp > 0) node = node.Pravy;
-                else return true;
-            }
-            return false;
-        }
-
-        private TreepPrvek<TK, TP> RotateRight(TreepPrvek<TK, TP> node)
-        {
-            TreepPrvek<TK, TP> left = node.Levy;
-            node.Levy = left.Pravy;
-            left.Pravy = node;
+            Node left = node.Left;
+            node.Left = left.Right;
+            left.Right = node;
             return left;
         }
 
-        private TreepPrvek<TK, TP> RotateLeft(TreepPrvek<TK, TP> node)
+        private Node RotateLeft(Node node)
         {
-            TreepPrvek<TK, TP> right = node.Pravy;
-            node.Pravy = right.Levy;
-            right.Levy = node;
+            Node right = node.Right;
+            node.Right = right.Left;
+            right.Left = node;
             return right;
+        }
+
+        public void Clear()
+        {
+            root = null;
+            count = 0;
+        }
+
+        public object Find(TK key)
+        {
+            Node node = root;
+            while (node != null)
+            {
+                int cmp = key.CompareTo(node.Key);
+                if (cmp < 0) node = node.Left;
+                else if (cmp > 0) node = node.Right;
+                else return node;
+            }
+            return null;
+        }
+
+        public int Height()
+        {
+            return Height(root);
+        }
+
+        private int Height(Node node)
+        {
+            if (node == null)
+                return 0;
+            int leftHeight = Height(node.Left);
+            int rightHeight = Height(node.Right);
+            return 1 + Math.Max(leftHeight, rightHeight);
         }
 
         public void PrintTree()
         {
-            PrintTree(koren, "", true);
+            PrintTree(root, "", true);
         }
 
-        private void PrintTree(TreepPrvek<TK, TP> node, string indent, bool last)
+        private void PrintTree(Node node, string indent, bool last)
         {
             if (node != null)
             {
@@ -178,45 +187,68 @@ namespace SemB.Treap
                     Console.Write("L----");
                     indent += "|    ";
                 }
-                Console.WriteLine(node.ToString());
+                Console.WriteLine($"{node.Key}({node.Priority})");
 
-                PrintTree(node.Levy, indent, false);
-                PrintTree(node.Pravy, indent, true);
+                PrintTree(node.Left, indent, false);
+                PrintTree(node.Right, indent, true);
             }
         }
 
-        public int Height()
+        public void LoadFromFile(string fileName)
         {
-            return Height(koren);
+            try
+            {
+                Clear();
+                foreach (var line in File.ReadAllLines(fileName))
+                {
+                    var parts = line.Split('(');
+                    if (parts.Length != 2)
+                        throw new FormatException("Line is not in the correct format 'key(priority)'");
+
+                    var key = (TK)Convert.ChangeType(parts[0].Trim(), typeof(TK));
+                    var priority = (TP)Convert.ChangeType(parts[1].Trim(')'), typeof(TP));
+
+                    Insert(ref root, key, priority); 
+                }
+                Console.WriteLine("Values were successfully loaded.");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error loading file: {e.Message}");
+            }
         }
 
-        private int Height(TreepPrvek<TK, TP> node)
+        public void SaveTreeToFile(string filePath)
         {
-            if (node == null)
-                return 0;
-
-            int leftHeight = Height(node.Levy);
-            int rightHeight = Height(node.Pravy);
-
-            return 1 + Math.Max(leftHeight, rightHeight);
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(filePath))
+                {
+                    foreach (var node in Iterator(root))
+                    {
+                        writer.WriteLine(node.PrintNode());
+                    }
+                }
+                Console.WriteLine("Tree values were successfully saved.");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error saving file: {e.Message}");
+            }
         }
 
-        public IEnumerable<TK> InOrderTraversal()
-        {
-            var list = new List<TK>();
-            InOrderTraversal(koren, list);
-            return list;
-        }
-
-        private void InOrderTraversal(TreepPrvek<TK, TP> node, List<TK> list)
+        private IEnumerable<Node> Iterator(Node node)
         {
             if (node != null)
             {
-                InOrderTraversal(node.Levy, list);
-                list.Add(node.Hodnota);
-                InOrderTraversal(node.Pravy, list);
+                foreach (var left in Iterator(node.Left))
+                    yield return left;
+
+                yield return node;
+
+                foreach (var right in Iterator(node.Right))
+                    yield return right;
             }
         }
-
     }
 }

@@ -7,14 +7,15 @@ using System.Threading.Tasks;
 
 namespace SemB.Treap
 {
-    internal interface ITreap<TK, TP> where TK : IComparable<TK> where TP : IComparable<TP> { 
-        void Clear();
-        int Count();
-
+    internal interface ITreap<TK, TP> where TK : IComparable<TK> where TP : IComparable<TP> {
 
         void Add(TK key);
-        void Remove(TK key);
-        bool Find(TK key);
+        bool Remove(TK key);
+        object Find(TK key);
+        void Clear();
+        int Count();
+        void PrintTree();
+        int Height();
 
     }
 }
